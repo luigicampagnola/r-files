@@ -1,0 +1,16 @@
+{
+  "sub": "aa936c81-d779-4777-90de-0cd5ed1d4ac0",
+  "email": "luigi.campagnola@uvltd.tech",
+  "accounts": [
+    {
+      "accountId": "7e1b7492-5a6c-4d24-bce2-1e679cc28e27",
+      "isDefault": "true",
+      "accountName": "Luigi Campagnola",
+      "baseUri": "https://demo.docusign.net"
+    }
+  ],
+  "name": "Luigi Campagnola",
+  "givenName": "Luigi",
+  "familyName": "Campagnola",
+  "created": "2022-04-27T20:06:24.867"
+}
