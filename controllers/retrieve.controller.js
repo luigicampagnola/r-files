@@ -49,21 +49,15 @@ async function retrieveController(envelope, i) {
     args.documentId,
     args.envelopeId
   ).catch((error) => {
-    console.log("failed to downloadResults retrieveController");
+    logger.error("failed to downloadResults retrieveController");
   });
 
-  if (downloadResults) {
-    await createFolderDownload();
-  } else {
-    console.log("error on createfolder retrieveController");
-  }
   return downloadResults;
 }
 
 // <-----------------------------------------------------------> //
 
 // R E S U L T S  H A N D L E R
-
 async function resultsHandler() {
   const envelopesInfo = await readEnvelopesInfo().catch((err) => {
     console.log("error on envelopesInfo resultsHandler");
@@ -74,6 +68,12 @@ async function resultsHandler() {
   });
 
   const envelopes = envelopesInfo.envelopes;
+
+  const envelopeSenderName = envelopes.map((envelopes) => {
+    return envelopes.sender.userName.replace(/ /g, "_");
+  });
+
+  //console.log(envelopeSenderName);
 
   const envelopeDate = envelopes.map((envelope) => {
     return envelope.createdDateTime;
@@ -89,42 +89,73 @@ async function resultsHandler() {
   });
 
   const emailSubjects = envelopes.map((envelope) => {
-    let formatedSubject = envelope.emailSubject;
-    return formatedSubject.replace(/ /g, "_");
+    let emailSubject = envelope.emailSubject.replace(/\//g,"_");
+    return emailSubject.split("/").join("_");
   });
 
-  const accountName = accountInfo.name;
+  const envelopeStatus = envelopes.map((envelope) => {
+    return envelope.status;
+  });
 
-  let formatedName = accountName.replace(/ /g, "_");
+
+
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const dataResult = await Promise.all(
     envelopeIds.map(async (envelope, i) => {
-      await wait(i * 4200); //4200
-      let data = await retrieveController(envelope, i).catch((err) => {
-        logger.error("error getting results in resultHandler let data");
-      });
+      await wait(i * 3700); //4200
+      try {
+        let data = await retrieveController(envelope, i).catch((err) => {
+          logger.error("error getting results in resultHandler let data");
+        });
 
-      let buff = Buffer.from(data, "binary");
+        let buff = Buffer.from(data, "binary");
 
-      let readable = new Readable();
-      readable._read = () => {};
-      readable.push(buff, "binary");
-      readable.push(null);
+        let readable = new Readable();
+        readable._read = () => {};
+        readable.push(buff, "binary");
+        readable.push(null);
 
-      let folderPath = path.join(
-        path.dirname(__dirname),
-        "downloads",
-        `${formatedName}`,
-        `${emailSubjects[i]}-${formatDateTime[i]}.pdf`
-      );
+        if (data) {
+          await createFolderDownload(envelopeSenderName[i], envelopeStatus[i]);
+        } else {
+          logger.error("error on createfolder retrieveController");
+        }
 
-      let writable = fs.createWriteStream(folderPath);
+        if (envelopeStatus[i] === "void") {
+          let folderPathVoid = path.join(
+            path.dirname(__dirname),
+            "downloads",
+            `${envelopeSenderName[i] + "_" + envelopeStatus[i]}`,
+            `${emailSubjects[i]}-${formatDateTime[i]}-${envelope}.pdf`
+          );
+          let writable = fs.createWriteStream(folderPathVoid);
 
-      logger.info(`Downloading files of ${formatedName} ${[i]}`);
+          logger.info(
+            `Downloading files of ${envelopeSenderName[i]}-${envelope}`
+          );
 
-      readable.pipe(writable);
+          readable.pipe(writable);
+        }
+        let folderPath = path.join(
+          path.dirname(__dirname),
+          "downloads",
+          `${envelopeSenderName[i]}`,
+          `${emailSubjects[i]}-${formatDateTime[i]}-${envelope}.pdf`
+        );
+
+        let writable = fs.createWriteStream(folderPath);
+
+        logger.info(
+          `Downloading files of ${envelopeSenderName[i]} envelopeId:-${envelope} `
+        );
+
+        readable.pipe(writable);
+      } catch (e) {
+        logger.error("error getting results in resultHandler let data")
+        return null;
+      }
     })
   );
   logger.info("Process Ended");

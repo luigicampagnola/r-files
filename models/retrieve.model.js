@@ -29,7 +29,7 @@ async function retrieveModel(
       {}
     ));
   } catch (e) {
-    logger.error(new Error("error on results retrieveModel"))
+    logger.error(new Error(`error on results retrieveModel on ${envelopeId}`))
   }
 }
 

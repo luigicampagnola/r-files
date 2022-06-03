@@ -7,6 +7,7 @@ const events = require("events");
 const path = require("path");
 const { getUserInfoModel } = require("../models/userInfo.model");
 const logger = require("../logger");
+const { getSharedEnvelopes } = require("../models/sharedEnvelopes");
 
 const eventEmitter = new events.EventEmitter();
 
@@ -38,7 +39,6 @@ async function writeEnvelopesInfo() {
   const accoundId = accountInfo.accounts[0].accountId;
   let basePath = accountInfo.accounts[0].baseUri + "/restapi";
 
-
   const results = await getFolderModel(accoundId, token, basePath).catch(
     (erro) => logger.error("error handling getFolderModel writeEnvelopesInfo")
   );
@@ -55,30 +55,9 @@ async function writeEnvelopesInfo() {
 }
 
 
-// WRITE ACCOUNT INFO (N O T  N E E D E D)
 
-/* async function writeAccountInfo() {
-  const results = await getUserInfoModel().catch((err) =>
-    console.log("err on getUserInfo writeAccountInfo")
-  );
-
-  console.log(results);
-
-  if (results) {
-    if (!fs.existsSync(folderPath)) {
-      fs.mkdirSync(folderPath);
-    }
-  }
-
-  let writer = fs.createWriteStream(folderPath + "accountInfo.json");
-  writer.write(JSON.stringify(results, null, 2));
-
-  return "Success";
-} */
 
 // <-------------------------- R E A D  I N F O  J S O N  F I L E S --------------------------------->
-
-
 
 async function readEnvelopesInfo() {
   let reader = fs.createReadStream(envelopeFile, "utf8");
@@ -116,10 +95,9 @@ async function readAccountInformation() {
   return JSON.parse(data);
 }
 
-eventEmitter.on("write", writeEnvelopesInfo);
+//eventEmitter.on("write", writeEnvelopesInfo);
 
-eventEmitter.emit("write")
-//eventEmitter.on("readAccountInfo", readEnvelopesInfo);
+//eventEmitter.emit("write");
 
 module.exports = {
   writeEnvelopesInfo,

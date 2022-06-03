@@ -4,11 +4,11 @@ const logger = require("../logger/dev-logger");
 
 const retrieveRouter = require("../routes/retrieve.router");
 const writeFileEnvelopeInfoRouter = require("../routes/file-handler.router");
-const getSharedEnvelopesRouter = require("../routes/getSharedEnvelopes.router");
+const getSharedEnvelopesRouter = require("../routes/sharedEnvelopes.router");
 
 app.use(express.json());
 const fs = require("fs");
-
+var axios = require("axios").default;
 const path = require("path");
 const folderPath = path.dirname(__dirname) + "/data/";
 let docusign = require("docusign-esign");
@@ -16,8 +16,6 @@ const { basePath, integrationKey, secretKey } = require("../data/data");
 let oAuth = docusign.ApiClient.OAuth;
 let oAuthBasePath = oAuth.BasePath.DEMO;
 let RedirectUri = "http://localhost:4004/oauth-callback";
-
-
 
 let apiClient = new docusign.ApiClient({
   basePath: basePath,
@@ -29,11 +27,6 @@ let responseType = apiClient.OAuth.ResponseType.CODE;
 let scopes = [apiClient.OAuth.Scope.SIGNATURE];
 
 let randomState = "*^.$DGj*)+}Jk";
-
-
-
-
-
 
 app.get("/auth", (req, res) => {
   let authUri = apiClient.getAuthorizationUri(
@@ -48,6 +41,7 @@ app.get("/auth", (req, res) => {
   res.redirect(authUri);
 });
 
+app.post("/auth");
 app.get("/oauth-callback", ({ query: { code } }, res) => {
   //res.send(code);
   //console.log(code);
@@ -65,6 +59,7 @@ app.get("/oauth-callback", ({ query: { code } }, res) => {
       let writeToken = fs.createWriteStream(folderPath + "access-token.json");
       writeToken.write(JSON.stringify(oAuthToken, null, 2));
 
+
       apiClient.getUserInfo(oAuthToken.accessToken).then(function (userInfo) {
         //console.log(userInfo);
         if (userInfo) {
@@ -76,8 +71,11 @@ app.get("/oauth-callback", ({ query: { code } }, res) => {
         writer.write(JSON.stringify(userInfo, null, 2));
       });
     });
-    res.end();
+
+  res.end();
 });
+
+
 
 //app.use("/redirect", loginRouter);
 app.use("/shared", getSharedEnvelopesRouter);
