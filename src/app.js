@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const logger = require("../logger/dev-logger");
+const logger = require("../logger");
 
 const retrieveRouter = require("../routes/retrieve.router");
 const writeFileEnvelopeInfoRouter = require("../routes/file-handler.router");
@@ -71,7 +71,6 @@ app.get("/oauth-callback", ({ query: { code } }, res) => {
         writer.write(JSON.stringify(userInfo, null, 2));
       });
     });
-
   res.end();
 });
 

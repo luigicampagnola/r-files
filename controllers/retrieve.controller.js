@@ -11,6 +11,7 @@ const {
   readEnvelopesInfo,
   readAccountInformation,
   readAccessToken,
+  readErrorEnvelopesInfo,
 } = require("../file-handlers/readWriteAPI");
 const logger = require("../logger");
 
@@ -90,14 +91,14 @@ async function resultsHandler() {
 
   const emailSubjects = envelopes.map((envelope) => {
     let emailSubject = envelope.emailSubject.replace(/\//g,"_");
-    return emailSubject.split("/").join("_");
+    let emailformat = emailSubject.replace(/ /g, "_");
+    let email = emailformat.replace(/:/g, "-")
+    return email.split("/").join("_");
   });
 
   const envelopeStatus = envelopes.map((envelope) => {
     return envelope.status;
   });
-
-
 
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -123,17 +124,18 @@ async function resultsHandler() {
           logger.error("error on createfolder retrieveController");
         }
 
+
         if (envelopeStatus[i] === "void") {
           let folderPathVoid = path.join(
             path.dirname(__dirname),
             "downloads",
             `${envelopeSenderName[i] + "_" + envelopeStatus[i]}`,
-            `${emailSubjects[i]}-${formatDateTime[i]}-${envelope}.pdf`
+            `${emailSubjects[i].slice(0, -4)}_-_${formatDateTime[i]}_-_${envelope}.pdf`
           );
           let writable = fs.createWriteStream(folderPathVoid);
 
           logger.info(
-            `Downloading files of ${envelopeSenderName[i]}-${envelope}`
+            `Downloading files of ${envelopeSenderName[i]} envelopeId:${envelope}`
           );
 
           readable.pipe(writable);
@@ -142,14 +144,128 @@ async function resultsHandler() {
           path.dirname(__dirname),
           "downloads",
           `${envelopeSenderName[i]}`,
-          `${emailSubjects[i]}-${formatDateTime[i]}-${envelope}.pdf`
+          `${emailSubjects[i].slice(0, -4)}_-_${formatDateTime[i]}_-_${envelope}.pdf`
         );
 
         let writable = fs.createWriteStream(folderPath);
 
         logger.info(
-          `Downloading files of ${envelopeSenderName[i]} envelopeId:-${envelope} `
+          `Downloading files of ${envelopeSenderName[i]} envelopeId:${envelope}`
         );
+
+
+
+        readable.pipe(writable);
+      } catch (e) {
+        logger.error("error getting results in resultHandler let data")
+        return null;
+      }
+    })
+  );
+  logger.info("Process Ended");
+  return dataResult;
+}
+
+
+// E R R O R S  R E S U L T S  H A N D L E R
+
+async function errorResultsHandler() {
+  const envelopesInfo = await readErrorEnvelopesInfo().catch((err) => {
+    console.log("error on envelopesInfo resultsHandler");
+  });
+
+  const accountInfo = await readAccountInformation().catch((erro) => {
+    console.log("error on accountInfo resultsHandler");
+  });
+
+
+  const envelopes = envelopesInfo.envelopes;
+
+  const envelopeSenderName = envelopes.map((envelopes) => {
+    return envelopes.sender.userName.replace(/ /g, "_");
+  });
+
+  //console.log(envelopeSenderName);
+
+  const envelopeDate = envelopes.map((envelope) => {
+    return envelope.createdDateTime;
+  });
+
+  const formatDateTime = envelopeDate.map((date) => {
+    let formatedDate = date.slice(0, -9);
+    return formatedDate.replace(/:/g, "-");
+  });
+
+  const envelopeIds = envelopes.map((envelope) => {
+    return envelope.envelopeId;
+  });
+
+  const emailSubjects = envelopes.map((envelope) => {
+    let emailSubject = envelope.emailSubject.replace(/\//g,"_");
+    let emailformat = emailSubject.replace(/ /g, "_");
+    let email = emailformat.replace(/:/g, "-")
+    let e = email.replace(/[^a-zA-Z0-9\-]/,"_")
+    return e.split("/").join("_");
+  });
+
+  const envelopeStatus = envelopes.map((envelope) => {
+    return envelope.status;
+  });
+
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const dataResult = await Promise.all(
+    envelopeIds.map(async (envelope, i) => {
+      await wait(i * 3700); //4200
+      try {
+        let data = await retrieveController(envelope, i).catch((err) => {
+          logger.error("error getting results in resultHandler let data");
+        });
+
+        let buff = Buffer.from(data, "binary");
+
+        let readable = new Readable();
+        readable._read = () => {};
+        readable.push(buff, "binary");
+        readable.push(null);
+
+        if (data) {
+          await createFolderDownload(envelopeSenderName[i], envelopeStatus[i]);
+        } else {
+          logger.error("error on createfolder retrieveController");
+        }
+
+
+        if (envelopeStatus[i] === "voided") {
+          let folderPathVoid = path.join(
+            path.dirname(__dirname),
+            "downloads",
+            `${envelopeSenderName[i] + "_" + envelopeStatus[i]}`,
+            `${emailSubjects[i].slice(0, -4)}_-_${formatDateTime[i]}_-_${envelope}.pdf`
+          );
+          let writable = fs.createWriteStream(folderPathVoid);
+
+          logger.info(
+            `Downloading files of ${envelopeSenderName[i]} envelopeId:${envelope}`
+          );
+
+          readable.pipe(writable);
+        }
+        let folderPath = path.join(
+          path.dirname(__dirname),
+          "downloads",
+          `${envelopeSenderName[i]}`,
+          `${emailSubjects[i].slice(0, -4)}_-_${formatDateTime[i]}_-_${envelope}.pdf`
+        );
+
+        let writable = fs.createWriteStream(folderPath);
+
+        logger.info(
+          `Downloading files of ${envelopeSenderName[i]} envelopeId:${envelope}`
+        );
+
+
 
         readable.pipe(writable);
       } catch (e) {
@@ -164,6 +280,9 @@ async function resultsHandler() {
 
 eventEmitter.on("results", resultsHandler);
 eventEmitter.emit("results", logger.info("Start Downloading Files"));
+
+eventEmitter.on("errorResults", errorResultsHandler);
+eventEmitter.emit("errorResults", logger.info("Start Downloading Files"))
 
 module.exports = {
   retrieveController,
