@@ -8,7 +8,6 @@ const getSharedEnvelopesRouter = require("../routes/sharedEnvelopes.router");
 
 app.use(express.json());
 const fs = require("fs");
-var axios = require("axios").default;
 const path = require("path");
 const folderPath = path.dirname(__dirname) + "/data/";
 let docusign = require("docusign-esign");
