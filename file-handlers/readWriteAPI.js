@@ -122,7 +122,7 @@ async function readAccessToken() {
     data += chunk;
   }
 
-  return JSON.parse(data);
+  return JSON.parse(data)
 }
 
 // R E A D  A C C O U N T  I N F O R M A T I O N
@@ -138,9 +138,8 @@ async function readAccountInformation() {
   return JSON.parse(data);
 }
 
-//eventEmitter.on("write", writeEnvelopesInfo);
-
-//eventEmitter.emit("write");
+eventEmitter.on("write", writeEnvelopesInfo);
+eventEmitter.emit("write");
 
 module.exports = {
   writeEnvelopesInfo,

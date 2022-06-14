@@ -16,7 +16,8 @@ async function getFolderModel(accountId, token, basePath) {
   let envelopesApi = new docusign.EnvelopesApi(dsApiClient),
     results = null;
 
-  let options = { fromDate: moment().subtract(700, "weeks").format() };
+    //18331 hours
+  let options = { fromDate: moment().subtract(5, "years").format() };
 
   try {
     return (results = await envelopesApi

@@ -281,8 +281,8 @@ async function errorResultsHandler() {
 eventEmitter.on("results", resultsHandler);
 eventEmitter.emit("results", logger.info("Start Downloading Files"));
 
-eventEmitter.on("errorResults", errorResultsHandler);
-eventEmitter.emit("errorResults", logger.info("Start Downloading Files"))
+//eventEmitter.on("errorResults", errorResultsHandler);
+//eventEmitter.emit("errorResults", logger.info("Start Downloading Files"))
 
 module.exports = {
   retrieveController,
