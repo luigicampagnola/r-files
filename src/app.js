@@ -27,7 +27,12 @@ let scopes = [apiClient.OAuth.Scope.SIGNATURE];
 
 let randomState = "*^.$DGj*)+}Jk";
 
+/* -------------------------------------------> A U T H E N T I C A T I O N -------------------------------------------> */
+
+/* REQ TO GET AUTH CODE */
 app.get("/auth", (req, res) => {
+
+  /* Req to get the Auth Code */
   let authUri = apiClient.getAuthorizationUri(
     integrationKey,
     scopes,
@@ -41,35 +46,59 @@ app.get("/auth", (req, res) => {
 });
 
 app.post("/auth");
+
+
+
+
+/* <---- REQ TO GET ACCESS-TOKEN ----> */
 app.get("/oauth-callback", ({ query: { code } }, res) => {
-  //res.send(code);
-  //console.log(code);
+
+  /* Stored authentication code  */
   let authCode = code;
+
+  /* Exchanging authentication code for the access token object */
   apiClient
     .generateAccessToken(integrationKey, secretKey, authCode)
     .then(function (oAuthToken) {
       console.log(oAuthToken);
+
+
+      /* Creating a data folder if it doens't exits */
       if (oAuthToken) {
         if (!fs.existsSync(folderPath)) {
           fs.mkdirSync(folderPath);
           logger.info("Started" + oAuthToken);
         }
       }
+
+      /* Creating the access-token.json file */
       let writeToken = fs.createWriteStream(folderPath + "access-token.json");
+
+
+      /* Writing the access token object on the access-token.json file */
       writeToken.write(JSON.stringify(oAuthToken, null, 2));
 
 
+      /* Req to get user's account info */
       apiClient.getUserInfo(oAuthToken.accessToken).then(function (userInfo) {
         //console.log(userInfo);
+
+        /* Creting data folder */
         if (userInfo) {
           if (!fs.existsSync(folderPath)) {
             fs.mkdirSync(folderPath);
           }
         }
+
+        /* Creating user-info.json file */
         let writer = fs.createWriteStream(folderPath + "user-Info.json");
+
+        /* Write the information on the user-info.json file */
         writer.write(JSON.stringify(userInfo, null, 2));
       });
     });
+
+
   res.end();
 });
 
